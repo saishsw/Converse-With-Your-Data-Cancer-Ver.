@@ -13,7 +13,17 @@ interface VisualizationProps {
 
 type ChartType = 'bar' | 'line' | 'area' | 'pie';
 
-const COLORS = ['#4f46e5', '#8b5cf6', '#ec4899', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#3b82f6'];
+// Natural, earthy palette
+const COLORS = [
+  '#ea580c', // Orange 600
+  '#d97706', // Amber 600
+  '#e11d48', // Rose 600
+  '#059669', // Emerald 600
+  '#0891b2', // Cyan 600 (Darker)
+  '#475569', // Slate 600
+  '#8b5cf6', // Violet 500 (kept as accent, but warmer)
+  '#db2777'  // Pink 600
+];
 
 export const Visualization: React.FC<VisualizationProps> = ({ data }) => {
   const [chartType, setChartType] = useState<ChartType>('bar');
@@ -90,7 +100,6 @@ export const Visualization: React.FC<VisualizationProps> = ({ data }) => {
   useEffect(() => {
     if (!data.length) return;
 
-    // Set default keys if current ones are invalid or empty
     const currentRow = data[0];
     
     // Default X Axis: Date -> Categorical -> First Key
@@ -104,25 +113,24 @@ export const Visualization: React.FC<VisualizationProps> = ({ data }) => {
 
     // Default Data Key: First Numeric
     let newDataKey = dataKey;
-    // Verify dataKey is still a valid numeric column
     if (!dataKey || !(dataKey in currentRow) || !analysis.numeric.includes(dataKey)) {
       if (analysis.numeric.length > 0) newDataKey = analysis.numeric[0];
-      else newDataKey = ''; // No numeric data to chart
+      else newDataKey = '';
       setDataKey(newDataKey);
     }
 
-    // Default Chart Type
+    // Default Chart Type: Keep existing if compatible, else switch
     if (!compatibleCharts.includes(chartType)) {
       setChartType(compatibleCharts[0] || 'bar');
     }
-  }, [data, analysis, compatibleCharts]);
+  }, [data, analysis, compatibleCharts]); // Depend on data changing
 
   if (!data.length || compatibleCharts.length === 0 || !dataKey) {
     return (
-      <div className="flex flex-col items-center justify-center h-full text-slate-400 p-8 text-center border-2 border-dashed border-slate-200 rounded-lg bg-slate-50">
-        <AlertCircle className="w-10 h-10 mb-3 opacity-50" />
-        <p className="font-medium">Unable to visualize this dataset</p>
-        <p className="text-sm mt-1">We need at least one numeric column to generate charts.</p>
+      <div className="flex flex-col items-center justify-center h-full text-stone-400 p-8 text-center bg-stone-50 rounded-xl">
+        <AlertCircle className="w-12 h-12 mb-4 opacity-50" fill="currentColor" />
+        <p className="font-bold text-lg text-stone-600">Unable to visualize this dataset</p>
+        <p className="text-sm mt-2 text-stone-500">We need at least one numeric column to generate charts.</p>
       </div>
     );
   }
@@ -130,12 +138,12 @@ export const Visualization: React.FC<VisualizationProps> = ({ data }) => {
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-white p-3 border border-slate-200 shadow-xl rounded-lg bg-opacity-95 backdrop-blur-sm z-50">
-          <p className="text-xs font-semibold text-slate-500 mb-1">{label}</p>
+        <div className="bg-white p-4 border border-stone-100 shadow-xl shadow-stone-200 rounded-2xl bg-opacity-95 backdrop-blur-sm z-50">
+          <p className="text-xs font-bold text-stone-400 uppercase tracking-wider mb-2">{label}</p>
           <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: payload[0].color }} />
-            <p className="text-sm font-bold text-slate-800">
-              {payload[0].name}: <span className="text-indigo-600">{payload[0].value.toLocaleString()}</span>
+            <div className="w-3 h-3 rounded-full shadow-sm" style={{ backgroundColor: payload[0].color }} />
+            <p className="text-base font-bold text-stone-800">
+              {payload[0].name}: <span className="text-orange-600 font-mono ml-1">{payload[0].value.toLocaleString()}</span>
             </p>
           </div>
         </div>
@@ -154,18 +162,18 @@ export const Visualization: React.FC<VisualizationProps> = ({ data }) => {
       case 'line':
         return (
           <LineChart {...commonProps}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
-            <XAxis dataKey={xAxisKey} stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} tick={{fill: '#64748b'}} />
-            <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} tick={{fill: '#64748b'}} />
+            <CartesianGrid strokeDasharray="3 3" stroke="#e7e5e4" vertical={false} />
+            <XAxis dataKey={xAxisKey} stroke="#78716c" fontSize={12} tickLine={false} axisLine={false} tick={{fill: '#78716c', fontWeight: 500}} />
+            <YAxis stroke="#78716c" fontSize={12} tickLine={false} axisLine={false} tick={{fill: '#78716c', fontWeight: 500}} />
             <Tooltip content={<CustomTooltip />} />
-            <Legend wrapperStyle={{ paddingTop: '20px' }} />
+            <Legend wrapperStyle={{ paddingTop: '24px', fontFamily: 'Plus Jakarta Sans', fontWeight: 600, color: '#57534e' }} />
             <Line 
               type="monotone" 
               dataKey={dataKey} 
-              stroke="#4f46e5" 
-              strokeWidth={3} 
-              dot={{ r: 4, fill: '#4f46e5', strokeWidth: 0 }} 
-              activeDot={{ r: 8, stroke: '#c7d2fe', strokeWidth: 4 }}
+              stroke="#ea580c" 
+              strokeWidth={4} 
+              dot={{ r: 4, fill: '#ea580c', strokeWidth: 2, stroke: '#fff' }} 
+              activeDot={{ r: 8, stroke: '#fed7aa', strokeWidth: 4, fill: '#ea580c' }}
               animationDuration={1500}
             />
           </LineChart>
@@ -175,22 +183,23 @@ export const Visualization: React.FC<VisualizationProps> = ({ data }) => {
           <AreaChart {...commonProps}>
             <defs>
               <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#4f46e5" stopOpacity={0.3}/>
-                <stop offset="95%" stopColor="#4f46e5" stopOpacity={0}/>
+                <stop offset="5%" stopColor="#ea580c" stopOpacity={0.3}/>
+                <stop offset="95%" stopColor="#ea580c" stopOpacity={0}/>
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
-            <XAxis dataKey={xAxisKey} stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} tick={{fill: '#64748b'}} />
-            <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} tick={{fill: '#64748b'}} />
+            <CartesianGrid strokeDasharray="3 3" stroke="#e7e5e4" vertical={false} />
+            <XAxis dataKey={xAxisKey} stroke="#78716c" fontSize={12} tickLine={false} axisLine={false} tick={{fill: '#78716c', fontWeight: 500}} />
+            <YAxis stroke="#78716c" fontSize={12} tickLine={false} axisLine={false} tick={{fill: '#78716c', fontWeight: 500}} />
             <Tooltip content={<CustomTooltip />} />
-            <Legend wrapperStyle={{ paddingTop: '20px' }} />
+            <Legend wrapperStyle={{ paddingTop: '24px', fontFamily: 'Plus Jakarta Sans', fontWeight: 600, color: '#57534e' }} />
             <Area 
               type="monotone" 
               dataKey={dataKey} 
-              stroke="#4f46e5" 
+              stroke="#ea580c"
+              strokeWidth={3}
               fillOpacity={1} 
               fill="url(#colorValue)" 
-              activeDot={{ r: 6, stroke: '#fff', strokeWidth: 2 }}
+              activeDot={{ r: 6, stroke: '#fff', strokeWidth: 2, fill: '#ea580c' }}
               animationDuration={1500}
             />
           </AreaChart>
@@ -204,48 +213,48 @@ export const Visualization: React.FC<VisualizationProps> = ({ data }) => {
               cy="50%"
               labelLine={false}
               label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-              outerRadius={120}
-              innerRadius={60}
-              paddingAngle={2}
+              outerRadius={130}
+              innerRadius={80}
+              paddingAngle={4}
               dataKey={dataKey}
               nameKey={xAxisKey}
               animationDuration={1000}
+              stroke="none"
+              cornerRadius={6}
             >
               {data.map((entry, index) => (
                 <Cell 
                   key={`cell-${index}`} 
                   fill={COLORS[index % COLORS.length]} 
-                  stroke="rgba(255,255,255,0.5)"
-                  strokeWidth={2}
-                  className="hover:opacity-80 transition-opacity cursor-pointer"
+                  className="hover:opacity-80 transition-opacity cursor-pointer shadow-lg"
                 />
               ))}
             </Pie>
             <Tooltip content={<CustomTooltip />} />
-            <Legend layout="vertical" align="right" verticalAlign="middle" />
+            <Legend layout="vertical" align="right" verticalAlign="middle" wrapperStyle={{ fontFamily: 'Plus Jakarta Sans', fontWeight: 600, color: '#57534e' }} />
           </PieChart>
         );
       case 'bar':
       default:
         return (
           <BarChart {...commonProps}>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-            <XAxis dataKey={xAxisKey} stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} tick={{fill: '#64748b'}} />
-            <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} tick={{fill: '#64748b'}} />
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e7e5e4" />
+            <XAxis dataKey={xAxisKey} stroke="#78716c" fontSize={12} tickLine={false} axisLine={false} tick={{fill: '#78716c', fontWeight: 500}} />
+            <YAxis stroke="#78716c" fontSize={12} tickLine={false} axisLine={false} tick={{fill: '#78716c', fontWeight: 500}} />
             <Tooltip 
-              cursor={{ fill: '#f1f5f9', opacity: 0.6 }}
+              cursor={{ fill: '#f5f5f4', opacity: 0.8 }}
               content={<CustomTooltip />}
             />
-            <Legend wrapperStyle={{ paddingTop: '20px' }} />
+            <Legend wrapperStyle={{ paddingTop: '24px', fontFamily: 'Plus Jakarta Sans', fontWeight: 600, color: '#57534e' }} />
             <Bar 
               dataKey={dataKey} 
-              fill="#4f46e5" 
-              radius={[6, 6, 0, 0]} 
+              fill="#ea580c" 
+              radius={[8, 8, 4, 4]} 
               barSize={40}
               animationDuration={1500}
             >
               {data.map((entry, index) => (
-                 <Cell key={`cell-${index}`} fill="#4f46e5" className="hover:fill-indigo-500 transition-colors" />
+                 <Cell key={`cell-${index}`} fill="#ea580c" className="hover:fill-orange-500 transition-colors" />
               ))}
             </Bar>
           </BarChart>
@@ -255,70 +264,82 @@ export const Visualization: React.FC<VisualizationProps> = ({ data }) => {
 
   return (
     <div className="flex flex-col h-full w-full">
-      <div className="flex flex-wrap items-center gap-4 mb-6 p-1 bg-white sticky top-0 z-10">
-        <div className="bg-slate-100 p-1 rounded-lg flex items-center">
+      <div className="flex flex-wrap items-center gap-4 mb-6 p-1 z-10">
+        <div className="bg-stone-100 p-1.5 rounded-2xl flex items-center shadow-inner">
           {compatibleCharts.includes('bar') && (
             <button 
               onClick={() => setChartType('bar')}
-              className={`p-2 rounded-md transition-all ${chartType === 'bar' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200'}`}
+              className={`p-2.5 rounded-xl transition-all ${chartType === 'bar' ? 'bg-white text-orange-600 shadow-md shadow-stone-200' : 'text-stone-400 hover:text-stone-600 hover:bg-stone-200/50'}`}
               title="Bar Chart"
             >
-              <BarChart2 className="w-5 h-5" />
+              <BarChart2 className="w-5 h-5" strokeWidth={2.5} />
             </button>
           )}
           {compatibleCharts.includes('line') && (
             <button 
               onClick={() => setChartType('line')}
-              className={`p-2 rounded-md transition-all ${chartType === 'line' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200'}`}
+              className={`p-2.5 rounded-xl transition-all ${chartType === 'line' ? 'bg-white text-orange-600 shadow-md shadow-stone-200' : 'text-stone-400 hover:text-stone-600 hover:bg-stone-200/50'}`}
               title="Line Chart"
             >
-              <TrendingUp className="w-5 h-5" />
+              <TrendingUp className="w-5 h-5" strokeWidth={2.5} />
             </button>
           )}
           {compatibleCharts.includes('area') && (
             <button 
               onClick={() => setChartType('area')}
-              className={`p-2 rounded-md transition-all ${chartType === 'area' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200'}`}
+              className={`p-2.5 rounded-xl transition-all ${chartType === 'area' ? 'bg-white text-orange-600 shadow-md shadow-stone-200' : 'text-stone-400 hover:text-stone-600 hover:bg-stone-200/50'}`}
               title="Area Chart"
             >
-              <Activity className="w-5 h-5" />
+              <Activity className="w-5 h-5" strokeWidth={2.5} />
             </button>
           )}
           {compatibleCharts.includes('pie') && (
             <button 
               onClick={() => setChartType('pie')}
-              className={`p-2 rounded-md transition-all ${chartType === 'pie' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200'}`}
+              className={`p-2.5 rounded-xl transition-all ${chartType === 'pie' ? 'bg-white text-orange-600 shadow-md shadow-stone-200' : 'text-stone-400 hover:text-stone-600 hover:bg-stone-200/50'}`}
               title="Pie Chart"
             >
-              <PieIcon className="w-5 h-5" />
+              <PieIcon className="w-5 h-5" strokeWidth={2.5} />
             </button>
           )}
         </div>
 
-        <div className="flex items-center gap-2">
-          <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">X-Axis</label>
-          <select 
-            value={xAxisKey} 
-            onChange={(e) => setXAxisKey(e.target.value)}
-            className="text-sm bg-slate-50 border-slate-200 rounded-md focus:border-indigo-500 focus:ring-indigo-500 py-1.5 pl-3 pr-8 shadow-sm transition-shadow hover:shadow-md cursor-pointer"
-          >
-            {Object.keys(data[0] || {}).map(k => <option key={k} value={k}>{k}</option>)}
-          </select>
-        </div>
+        <div className="flex flex-wrap items-center gap-4 ml-auto">
+          <div className="flex items-center gap-2">
+            <label className="text-xs font-bold text-stone-400 uppercase tracking-wider">X-Axis</label>
+            <div className="relative">
+               <select 
+                value={xAxisKey} 
+                onChange={(e) => setXAxisKey(e.target.value)}
+                className="text-sm bg-stone-50 border-stone-200 rounded-xl focus:border-orange-500 focus:ring-orange-500 py-2 pl-4 pr-10 shadow-sm transition-shadow hover:shadow-md cursor-pointer appearance-none font-semibold text-stone-700"
+              >
+                {Object.keys(data[0] || {}).map(k => <option key={k} value={k}>{k}</option>)}
+              </select>
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                <svg className="w-4 h-4 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+              </div>
+            </div>
+          </div>
 
-        <div className="flex items-center gap-2">
-          <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Y-Axis</label>
-          <select 
-            value={dataKey} 
-            onChange={(e) => setDataKey(e.target.value)}
-            className="text-sm bg-slate-50 border-slate-200 rounded-md focus:border-indigo-500 focus:ring-indigo-500 py-1.5 pl-3 pr-8 shadow-sm transition-shadow hover:shadow-md cursor-pointer"
-          >
-             {analysis.numeric.map(k => <option key={k} value={k}>{k}</option>)}
-          </select>
+          <div className="flex items-center gap-2">
+            <label className="text-xs font-bold text-stone-400 uppercase tracking-wider">Y-Axis</label>
+             <div className="relative">
+              <select 
+                value={dataKey} 
+                onChange={(e) => setDataKey(e.target.value)}
+                className="text-sm bg-stone-50 border-stone-200 rounded-xl focus:border-orange-500 focus:ring-orange-500 py-2 pl-4 pr-10 shadow-sm transition-shadow hover:shadow-md cursor-pointer appearance-none font-semibold text-stone-700"
+              >
+                {analysis.numeric.map(k => <option key={k} value={k}>{k}</option>)}
+              </select>
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                <svg className="w-4 h-4 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+              </div>
+             </div>
+          </div>
         </div>
       </div>
 
-      <div className="flex-grow w-full min-h-[400px]">
+      <div className="flex-grow w-full h-[500px]">
         <ResponsiveContainer width="100%" height="100%">
           {renderChart()}
         </ResponsiveContainer>
