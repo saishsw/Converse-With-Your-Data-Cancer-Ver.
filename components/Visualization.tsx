@@ -24,16 +24,45 @@ export const Visualization: React.FC<VisualizationProps> = ({ data }) => {
   const analysis = useMemo(() => {
     if (!data || data.length === 0) return { numeric: [], categorical: [], date: [] };
     
-    const row = data[0];
-    const numeric = Object.keys(row).filter(k => typeof row[k] === 'number');
-    // Simple heuristic for dates: check if string key contains 'date' or 'time' or value looks like date
-    const date = Object.keys(row).filter(k => {
-      const val = row[k];
-      return typeof val === 'string' && 
-             (k.toLowerCase().includes('date') || k.toLowerCase().includes('time') || !isNaN(Date.parse(val)));
+    // Check first 10 rows (or all if less) to determine type more robustly
+    const sampleSize = Math.min(data.length, 10);
+    const sampleRows = data.slice(0, sampleSize);
+    const columns = Object.keys(data[0]);
+
+    const numeric: string[] = [];
+    const categorical: string[] = [];
+    const date: string[] = [];
+
+    columns.forEach(col => {
+      let isNumeric = true;
+      let isDate = false;
+      let hasData = false;
+      
+      // Check first non-null value for date heuristic
+      const firstVal = sampleRows.find(r => r[col] != null)?.[col];
+      if (typeof firstVal === 'string' && !isNaN(Date.parse(firstVal)) && (col.toLowerCase().includes('date') || col.toLowerCase().includes('time') || firstVal.includes('-') || firstVal.includes('/'))) {
+         isDate = true;
+         isNumeric = false;
+      } else {
+         // Check strictly for numbers across sample
+         for (const row of sampleRows) {
+           const val = row[col];
+           if (val === null || val === undefined || val === '') continue;
+           hasData = true;
+           if (typeof val !== 'number') {
+             isNumeric = false;
+             break;
+           }
+         }
+      }
+
+      if (hasData || firstVal !== undefined) {
+        if (isNumeric) numeric.push(col);
+        else if (isDate) date.push(col);
+        else categorical.push(col);
+      }
     });
-    const categorical = Object.keys(row).filter(k => typeof row[k] === 'string' || typeof row[k] === 'boolean');
-    
+
     return { numeric, categorical, date };
   }, [data]);
 
@@ -75,7 +104,8 @@ export const Visualization: React.FC<VisualizationProps> = ({ data }) => {
 
     // Default Data Key: First Numeric
     let newDataKey = dataKey;
-    if (!dataKey || !(dataKey in currentRow) || typeof currentRow[dataKey] !== 'number') {
+    // Verify dataKey is still a valid numeric column
+    if (!dataKey || !(dataKey in currentRow) || !analysis.numeric.includes(dataKey)) {
       if (analysis.numeric.length > 0) newDataKey = analysis.numeric[0];
       else newDataKey = ''; // No numeric data to chart
       setDataKey(newDataKey);
@@ -97,6 +127,23 @@ export const Visualization: React.FC<VisualizationProps> = ({ data }) => {
     );
   }
 
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white p-3 border border-slate-200 shadow-xl rounded-lg bg-opacity-95 backdrop-blur-sm z-50">
+          <p className="text-xs font-semibold text-slate-500 mb-1">{label}</p>
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: payload[0].color }} />
+            <p className="text-sm font-bold text-slate-800">
+              {payload[0].name}: <span className="text-indigo-600">{payload[0].value.toLocaleString()}</span>
+            </p>
+          </div>
+        </div>
+      );
+    }
+    return null;
+  };
+
   const renderChart = () => {
     const commonProps = {
       data: data,
@@ -110,9 +157,7 @@ export const Visualization: React.FC<VisualizationProps> = ({ data }) => {
             <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
             <XAxis dataKey={xAxisKey} stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} tick={{fill: '#64748b'}} />
             <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} tick={{fill: '#64748b'}} />
-            <Tooltip 
-              contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-            />
+            <Tooltip content={<CustomTooltip />} />
             <Legend wrapperStyle={{ paddingTop: '20px' }} />
             <Line 
               type="monotone" 
@@ -137,7 +182,7 @@ export const Visualization: React.FC<VisualizationProps> = ({ data }) => {
             <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
             <XAxis dataKey={xAxisKey} stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} tick={{fill: '#64748b'}} />
             <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} tick={{fill: '#64748b'}} />
-            <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}/>
+            <Tooltip content={<CustomTooltip />} />
             <Legend wrapperStyle={{ paddingTop: '20px' }} />
             <Area 
               type="monotone" 
@@ -176,7 +221,7 @@ export const Visualization: React.FC<VisualizationProps> = ({ data }) => {
                 />
               ))}
             </Pie>
-            <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgb(0 0 0 / 0.1)' }}/>
+            <Tooltip content={<CustomTooltip />} />
             <Legend layout="vertical" align="right" verticalAlign="middle" />
           </PieChart>
         );
@@ -189,7 +234,7 @@ export const Visualization: React.FC<VisualizationProps> = ({ data }) => {
             <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} tick={{fill: '#64748b'}} />
             <Tooltip 
               cursor={{ fill: '#f1f5f9', opacity: 0.6 }}
-              contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+              content={<CustomTooltip />}
             />
             <Legend wrapperStyle={{ paddingTop: '20px' }} />
             <Bar 
@@ -209,7 +254,7 @@ export const Visualization: React.FC<VisualizationProps> = ({ data }) => {
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full w-full">
       <div className="flex flex-wrap items-center gap-4 mb-6 p-1 bg-white sticky top-0 z-10">
         <div className="bg-slate-100 p-1 rounded-lg flex items-center">
           {compatibleCharts.includes('bar') && (
@@ -273,7 +318,7 @@ export const Visualization: React.FC<VisualizationProps> = ({ data }) => {
         </div>
       </div>
 
-      <div className="flex-grow w-full min-h-[300px]">
+      <div className="flex-grow w-full min-h-[400px]">
         <ResponsiveContainer width="100%" height="100%">
           {renderChart()}
         </ResponsiveContainer>

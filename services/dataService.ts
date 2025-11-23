@@ -1,16 +1,46 @@
 import { DataRow, QueryResult } from '../types';
 
-export const SAMPLE_CSV_CONTENT = `id,product,category,price,sales,date,region,profit
-1,Laptop Pro,Electronics,1200,50,2023-01-15,North,15000
-2,Wireless Mouse,Electronics,25,200,2023-01-16,South,2500
-3,Coffee Maker,Home,85,30,2023-01-17,East,1200
-4,Desk Chair,Furniture,250,20,2023-01-18,West,2000
-5,Monitor 4K,Electronics,400,45,2023-01-19,North,6500
-6,Blender,Home,50,60,2023-01-20,East,900
-7,Standing Desk,Furniture,500,15,2023-01-21,West,3500
-8,Headphones,Electronics,150,80,2023-01-22,South,4000
-9,Toaster,Home,40,40,2023-01-23,North,600
-10,Bookshelf,Furniture,120,25,2023-01-24,East,1200`;
+export const SAMPLE_CSV_CONTENT = `case_id,biomarkerName,gene,therapyName,diagnosis_UAHS,primary_Tumor_Organ
+1,ERBB2 (Her2/Neu),ERBB2,"lapatinib, pertuzumab, trastuzumab",Mucinous adenocarcinoma,appendix
+1,KRAS,KRAS,"cetuximab, panitumumab",Mucinous adenocarcinoma,appendix
+1,KRAS,KRAS,"lapatinib, pertuzumab, trastuzumab",Mucinous adenocarcinoma,appendix
+2,BRAF,BRAF,"cetuximab,panitumumab",Adenocarcinoma,colon
+2,KRAS,KRAS,"cetuximab,panitumumab",Adenocarcinoma,colon
+2,NRAS,NRAS,"cetuximab,panitumumab",Adenocarcinoma,colon
+2,PIK3CA,PIK3CA,aspirin,Adenocarcinoma,colon
+2,PIK3CA,PIK3CA,"cetuximab,panitumumab",Adenocarcinoma,colon
+2,PTEN,PTEN,"cetuximab,panitumumab",Adenocarcinoma,colon
+3,KRAS,KRAS,"cetuximab, panitumumab",Adenocarcinoma,colon
+5,PD-L1 (22c3),CD274,pembrolizumab,Squamous cell carcinoma,tonsils
+6,ERBB2 (Her2/Neu),ERBB2,"lapatinib, pertuzumab, trastuzumab",Adenocarcinoma,rectum
+6,NRAS,NRAS,"cetuximab, panitumumab",Adenocarcinoma,rectum
+7,ER,ESR1,endocrine therapy,Low-grade serous carcinoma,ovaries
+7,FOLR1,FOLR1,mirvetuximab soravtansine,Low-grade serous carcinoma,ovaries
+7,PD-L1 (22c3),CD274,pembrolizumab,Low-grade serous carcinoma,ovaries
+8,PD-L1 (22c3),CD274,pembrolizumab,High-grade serous carcinoma,peritoneum
+9,BRAF,BRAF,"binimetinib, cobimetinib, dabrafenib, encorafenib, trametinib, vemurafenib",Nodular melanoma,skin
+10,PD-L1 (SP142),CD274,nivolumab,Squamous cell carcinoma,penis
+10,PD-L1 (SP142),CD274,pembrolizumab,Squamous cell carcinoma,penis
+11,BRAF,BRAF,"dabrafenib, encorafenib, vemurafenib",Melanoma,skin
+12,AR,AR,"bicalutamide, enzalutamide",Ductal carcinoma,breast
+12,BRCA1,BRCA1,"carboplatin, cisplatin",Ductal carcinoma,breast
+12,BRCA1,BRCA1,"olaparib, talazoparib",Ductal carcinoma,breast
+12,ER,ESR1,endocrine therapy,Ductal carcinoma,breast
+12,ER/PR/Her2/Neu,ERBB2,sacituzumab govitecan,Ductal carcinoma,breast
+12,ER/PR/Her2/Neu,ESR1,sacituzumab govitecan,Ductal carcinoma,breast
+12,ER/PR/Her2/Neu,PGR,sacituzumab govitecan,Ductal carcinoma,breast
+12,ERBB2 (Her2/Neu),ERBB2,"pertuzumab, margetuximab fam-trastuzumab deruxtecan-nxki lapatinib, neratinib, tucatinib",Ductal carcinoma,breast
+12,ERBB2 (Her2/Neu),ERBB2,"trastuzumab ado-trastuzumab emtansine (T-DM1)",Ductal carcinoma,breast
+12,PR,PGR,endocrine therapy,Ductal carcinoma,breast
+13,Mismatch Repair Status,MLH1,"dostarlimab, pembrolizumab",Brenner tumor,ovaries
+13,Mismatch Repair Status,MSH2,"dostarlimab, pembrolizumab",Brenner tumor,ovaries
+13,Mismatch Repair Status,MSH6,"dostarlimab, pembrolizumab",Brenner tumor,ovaries
+13,Mismatch Repair Status,PMS2,"dostarlimab, pembrolizumab",Brenner tumor,ovaries
+14,ERBB2 (Her2/Neu),ERBB2,"trastuzumab + chemotherapy",Serous carcinoma,uterus
+14,Mismatch Repair Status,MLH1,"pembrolizumab + lenvatinib",Serous carcinoma,uterus
+14,Mismatch Repair Status,MSH2,"pembrolizumab + lenvatinib",Serous carcinoma,uterus
+14,Mismatch Repair Status,MSH6,"pembrolizumab + lenvatinib",Serous carcinoma,uterus
+14,Mismatch Repair Status,PMS2,"pembrolizumab + lenvatinib",Serous carcinoma,uterus`;
 
 export const parseCSV = (file: File): Promise<DataRow[]> => {
   return new Promise((resolve, reject) => {

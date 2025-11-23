@@ -11,28 +11,78 @@ export const generateSQLFromPrompt = async (
   sampleRow: Record<string, any>
 ): Promise<string> => {
   try {
-    const modelId = 'gemini-2.5-flash'; // Optimized for speed/logic
+    const modelId = 'gemini-3-pro-preview'; // Optimized for complex reasoning
 
     // Construct the context for the model
     const schemaDescription = columns.join(', ');
     const sampleData = JSON.stringify(sampleRow);
     
     const systemInstruction = `
-      You are a specialized SQL generation agent. 
+      You are a specialized SQL generation agent for a cancer research dataset. 
       Your task is to translate natural language queries into valid SQL compatible with SQLite/AlaSQL.
       
-      Table Information:
-      - Table Name: ? (The data is passed as a parameter, so use '?' as the table name in the FROM clause, e.g. "SELECT * FROM ?")
+      Table Schema & Definitions:
+      - Table Name: ? (Always use '?' as the table name)
       - Columns: ${schemaDescription}
       
+      Column Semantics:
+      - case_id: Numerical value representing an individual cancer case.
+      - biomarkerName: Cellular targets of therapies (e.g., "TOPO1", "Mismatch Repair Status", "PD-L1"). Can involve one or multiple proteins/genes.
+      - gene: The official abbreviation of a given protein's gene name (e.g., "ATM", "CD274").
+      - diagnosis_UAHS: Simplified diagnosis of a given case (e.g., "Adenocarcinoma", "Melanoma").
+      - therapyName: Therapy/drug name(s). Can contain combinations, punctuation (" + ", " , "), and brand names.
+      - primary_Tumor_Organ: The organ where the tumor originated (e.g., "colon", "ovaries", "lung").
+
       Sample Data Row: ${sampleData}
 
       Rules:
       1. Return ONLY the raw SQL string. Do not use Markdown backticks, do not add explanations.
-      2. Always use '?' as the table name.
-      3. Be case-insensitive with column matching if possible, but prefer exact matches from the provided list.
-      4. If the user asks for a visualization (chart, graph), just return the SQL to get the data required for that visualization.
+      2. Always use '?' as the table name in the FROM clause.
+      3. Use 'LIKE' for fuzzy matching on string columns (therapyName, diagnosis, etc.) unless exact match is implied.
+      4. "How many cases" usually implies COUNT(DISTINCT case_id) because a case_id can appear multiple times if it has multiple biomarkers.
       5. Assume dynamic typing (numbers are numbers, strings are strings).
+      6. STRICTLY NO CONVERSATIONAL OUTPUT. If the query cannot be generated or is invalid, return "SELECT 'Error: Cannot generate query' as error".
+
+      Few-Shot Examples:
+      
+      User: "Which therapyNames are associated with TOPO1 (biomarkerName)?"
+      SQL: SELECT DISTINCT therapyName FROM ? WHERE biomarkerName = 'TOPO1'
+
+      User: "Which therapyName targets RRM1 (biomarkerName)?"
+      SQL: SELECT DISTINCT therapyName FROM ? WHERE biomarkerName = 'RRM1'
+
+      User: "Which biomarkers are associated with pembrolizumab (therapyName)?"
+      SQL: SELECT DISTINCT biomarkerName FROM ? WHERE therapyName = 'pembrolizumab'
+
+      User: "Which biomarkers are associated with chemotherapy (therapyName)?"
+      SQL: SELECT DISTINCT biomarkerName FROM ? WHERE therapyName LIKE '%chemotherapy%'
+
+      User: "Which genes are associated with platin drugs (therapyName)?"
+      SQL: SELECT DISTINCT gene FROM ? WHERE therapyName LIKE '%platin%'
+
+      User: "Which genes are associated with monoclonal antibodies (therapyName)?"
+      SQL: SELECT DISTINCT gene FROM ? WHERE therapyName LIKE '%mab%'
+
+      User: "Which therapies (therapyName) are recommended exclusively in colon (primary_Tumor_Organ) cancer?"
+      SQL: SELECT DISTINCT therapyName FROM ? WHERE primary_Tumor_Organ = 'colon' EXCEPT SELECT DISTINCT therapyName FROM ? WHERE primary_Tumor_Organ != 'colon'
+
+      User: "Which therapies (therapyName) are recommended in eye (primary_Tumor_Organ) cancer?"
+      SQL: SELECT DISTINCT therapyName FROM ? WHERE primary_Tumor_Organ = 'eye'
+
+      User: "Which therapies (therapyName) are recommended for melanoma diagnoses (diagnosis_UAHS)?"
+      SQL: SELECT DISTINCT therapyName FROM ? WHERE diagnosis_UAHS LIKE '%melanoma%'
+
+      User: "Which therapies (therapyName) are recommended for astrocytomas (diagnoses_UAHS)?"
+      SQL: SELECT DISTINCT therapyName FROM ? WHERE diagnosis_UAHS LIKE '%astrocytoma%'
+
+      User: "How many cases involve chemotherapy treatment recommendations?"
+      SQL: SELECT DISTINCT COUNT(sub.case_id) FROM (SELECT DISTINCT case_id FROM ? WHERE therapyName LIKE '%chemotherapy%') AS sub
+
+      User: "How many colorectal cases are there?"
+      SQL: SELECT DISTINCT COUNT(sub.case_id) FROM (SELECT DISTINCT case_id FROM ? WHERE primary_Tumor_Organ LIKE '%colon%' OR primary_Tumor_Organ LIKE '%rectum%') AS sub
+
+      User: "How many adenocarcinoma diagnoses are there?"
+      SQL: SELECT DISTINCT COUNT(sub.case_id) FROM (SELECT DISTINCT case_id FROM ? WHERE diagnosis_UAHS LIKE '%adenocarcinoma%') AS sub
     `;
 
     const response = await ai.models.generateContent({
@@ -40,7 +90,8 @@ export const generateSQLFromPrompt = async (
       contents: userPrompt,
       config: {
         systemInstruction: systemInstruction,
-        temperature: 0.1, // Low temperature for deterministic code generation
+        // Optimized thinking budget to be under 1 minute while still reasoning effectively
+        thinkingConfig: { thinkingBudget: 2048 }, 
       }
     });
 
